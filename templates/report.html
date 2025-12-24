@@ -95,6 +95,44 @@
             color: #2e7d32 !important; /* Verde escuro */
             background-color: #e8f5e9 !important;
         }
+
+        /* Container para permitir scroll lateral */
+        .table-wrapper {
+            overflow-x: auto;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        @media (max-width: 768px) {
+            /* Fixa a primeira coluna (Nomes) */
+            .col-piloto, 
+            thead tr:first-child th:first-child,
+            thead tr:nth-child(2) th:first-child {
+                position: sticky;
+                left: 0;
+                z-index: 20;
+                background-color: var(--card-bg) !important;
+                min-width: 140px; /* Largura mínima no mobile */
+                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            }
+
+            /* Ajuste de profundidade para o cabeçalho fixo */
+            thead th {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+
+            /* Diminuir levemente o padding para ganhar espaço */
+            td, th {
+                padding: 10px 5px !important;
+                font-size: 0.85em !important;
+            }
+
+            .chart-container {
+                height: 300px; /* Gráfico menor no mobile */
+            }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -102,78 +140,82 @@
     <div class="report-header">
         <div class="club-tag">{{ club }} • {{ track }}</div>
         <h1>{{ event.title }}</h1>
-        <p style="color: #64748b; font-weight: 500;">{{ event.date_ini }}</p>
+        <p style="color: #64748b; font-weight: 500;">{{ event.date }}</p>
     </div>
 
     <div class="card">
         <div class="section-title">Mapa de Corrida</div>
-        <table>
-            <thead>
-                <tr>
-                    <th rowspan="2" style="text-align: left;">Piloto</th>
-                    {% set cores_nomes = ["Vermelha", "Branca", "Verde", "Laranja", "Azul", "Amarela", "Roxa", "Preta"] %}
-                    {% for i in range(start=1, end=metadata.slots + 1) %}
-                        {% set idx = i - 1 %}{% set nome_fenda = cores_nomes[idx] %}
-                        <th colspan="2" class="f-{{ nome_fenda }}">{{ nome_fenda }}</th>
-                    {% endfor %}
-                    <th colspan="2" style="background: var(--accent-soft);">Resultado</th>
-                </tr>
-                <tr>
-                    {% for i in range(start=1, end=metadata.slots + 1) %}
-                    <th>V</th><th>T</th>
-                    {% endfor %}
-                    <th style="background: var(--accent-soft);">Voltas</th>
-                    <th style="background: var(--accent-soft);">Best</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in ranking_display %}
-                <tr>
-                    <td class="col-piloto">{{ p.nome }}</td>
-                    {% for i in range(start=1, end=metadata.slots + 1) %}
-                        {% set idx = i - 1 %}
-                        {% set nome_fenda = cores_nomes[idx] %}
-                        {% set tempo_atual = p.times_per_slot[i] | default(value="---") %}
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="text-align: left;">Piloto</th>
+                        {% set cores_nomes = ["Vermelha", "Branca", "Verde", "Laranja", "Azul", "Amarela", "Roxa", "Preta"] %}
+                        {% for i in range(start=1, end=metadata.slots + 1) %}
+                            {% set idx = i - 1 %}{% set nome_fenda = cores_nomes[idx] %}
+                            <th colspan="2" class="f-{{ nome_fenda }}">{{ nome_fenda }}</th>
+                        {% endfor %}
+                        <th colspan="2" style="background: var(--accent-soft);">Resultado</th>
+                    </tr>
+                    <tr>
+                        {% for i in range(start=1, end=metadata.slots + 1) %}
+                        <th>V</th><th>T</th>
+                        {% endfor %}
+                        <th style="background: var(--accent-soft);">Voltas</th>
+                        <th style="background: var(--accent-soft);">Best</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in ranking_display %}
+                    <tr>
+                        <td class="col-piloto">{{ p.nome }}</td>
+                        {% for i in range(start=1, end=metadata.slots + 1) %}
+                            {% set idx = i - 1 %}
+                            {% set nome_fenda = cores_nomes[idx] %}
+                            {% set tempo_atual = p.times_per_slot[i] | default(value="---") %}
+                            
+                            <td class="f-{{ nome_fenda }}">{{ p.laps_per_slot[i] | default(value="0") }}</td>
+                            <td class="f-{{ nome_fenda }} {% if tempo_atual == best_times_per_slot[i] %}best-in-slot{% endif %}" style="opacity: 0.9; font-size: 0.85em;">
+                                {{ tempo_atual }}
+                            </td>
+                        {% endfor %}
                         
-                        <td class="f-{{ nome_fenda }}">{{ p.laps_per_slot[i] | default(value="0") }}</td>
-                        <td class="f-{{ nome_fenda }} {% if tempo_atual == best_times_per_slot[i] %}best-in-slot{% endif %}" style="opacity: 0.9; font-size: 0.85em;">
-                            {{ tempo_atual }}
+                        <td class="total-laps-cell">
+                            {{ p.total_laps }}
                         </td>
-                    {% endfor %}
-                    
-                    <td class="total-laps-cell">
-                        {{ p.total_laps }}
-                    </td>
 
-                    <td style="font-weight: 600;" class="{% if p.best_time == overall_best_time_formatted %}total-best-highlight{% endif %}">
-                        {{ p.best_time }}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        <td style="font-weight: 600;" class="{% if p.best_time == overall_best_time_formatted %}total-best-highlight{% endif %}">
+                            {{ p.best_time }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="card">
         <div class="section-title">Classificação Geral</div>
-        <table>
-            <thead>
-                <tr><th>Pos</th><th style="text-align: left;">Piloto</th><th>Voltas</th><th>Zona / Gap</th><th>Média</th><th>Melhor Volta</th><th>Melhor Fenda</th></tr>
-            </thead>
-            <tbody>
-                {% for p in ranking_display %}
-                <tr>
-                    <td style="color: #94a3b8; font-weight: bold;">{{ loop.index }}</td>
-                    <td class="col-piloto">{{ p.nome }}</td>
-                    <td class="total-laps-cell">{{ p.total_laps }}</td>
-                    <td style="color: #64748b; font-size: 0.85em;">{{ p.zona }} / {{ p.gap }}</td>
-                    <td>{{ p.average_time }}</td>
-                    <td><span class="{% if p.is_overall_best %}overall-best-lap-highlight{% endif %}">{{ p.best_time }}</span></td>
-                    <td><span class="pill-fenda bg-{{ p.best_slot_name }}">{{ p.best_slot_name }}</span></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Pos</th><th style="text-align: left;">Piloto</th><th>Voltas</th><th>Zona / Gap</th><th>Média</th><th>Melhor Volta</th><th>Melhor Fenda</th></tr>
+                </thead>
+                <tbody>
+                    {% for p in ranking_display %}
+                    <tr>
+                        <td style="color: #94a3b8; font-weight: bold;">{{ loop.index }}</td>
+                        <td class="col-piloto">{{ p.nome }}</td>
+                        <td class="total-laps-cell">{{ p.total_laps }}</td>
+                        <td style="color: #64748b; font-size: 0.85em;">{{ p.zona }} / {{ p.gap }}</td>
+                        <td>{{ p.average_time }}</td>
+                        <td><span class="{% if p.is_overall_best %}overall-best-lap-highlight{% endif %}">{{ p.best_time }}</span></td>
+                        <td><span class="pill-fenda bg-{{ p.best_slot_name }}">{{ p.best_slot_name }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="card">

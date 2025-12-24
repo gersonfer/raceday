@@ -274,6 +274,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("🔔 [5/5] Sincronizando com Render.com...");
     trigger_render_sync().await;
 
-    println!("\n✨ PROCESSO CONCLUÍDO COM SUCESSO!");
+    println!("\n✨ Processo concluído com sucesso!");
     Ok(())
 }

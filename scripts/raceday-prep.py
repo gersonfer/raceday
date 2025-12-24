@@ -87,10 +87,15 @@ def main() -> None:
     display_title = raw_name
     # Geramos o slug limpo (sem acentos) para o nome do arquivo/URL
     slug = slugify(display_title)
+    club_slug = slugify(args.club)
+    track_slug = slugify(args.track)
 
     filename_input = os.path.basename(args.input)
     match_ts = re.search(r'(\d{14})', filename_input)
     ini_timestamp = match_ts.group(1) if match_ts else datetime.now().strftime("%Y%m%d%H%M%S")
+
+    report_filename = f"{club_slug}_{track_slug}_{slug}_{ini_timestamp}.html"
+    report_link = f"https://pub-598608239bfb446e841ac7b4290a0223.r2.dev/reports/{report_filename}"
     
     # Detecção dinâmica de slots
     max_slot = 0
@@ -105,15 +110,18 @@ def main() -> None:
         "org_car_version": "1.1",
         "club": args.club.upper(),
         "track": args.track.upper(),
+        "report_link": report_link,
         "event": {
             "title": display_title,
             "slug": slug,
-            "date_ini": config.get("config", "date", fallback=""),
+            "date": config.get("config", "date", fallback=""),
             "timestamp": ini_timestamp
         },
         "metadata": {
             "slots": max_slot,
             "generated_at": datetime.now(timezone.utc).isoformat(),
+            "report_filename": report_filename
+
         },
         "official_ranking": [], 
         "pilots": {k: {"name": v.strip('"')} for k, v in config["pilots"].items()},
