@@ -1,6 +1,14 @@
-/target
-/temp_out
-/build-json
+# Pastas de compilação (Ancoradas na raiz para performance)
+/target/
+/temp_out/
+/build-python/
+/dist/
+
+# Arquivos de ambiente e dados (Segurança)
 .env
 *.json
 !index.json
+
+# Lixo de Sistema e Python (Ignorar em qualquer subpasta)
+**/.DS_Store
+**/__pycache__/
