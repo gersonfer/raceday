@@ -113,10 +113,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let club = env::var("CLUB").expect("❌ CLUB não definida");
     let track = env::var("TRACK").expect("❌ TRACK não definida");
 
-    // Ajuste o caminho do script conforme sua estrutura
-    println!("🚀 [1/5] Iniciando processamento Python (Fidelidade Total)...");
-    let output = Command::new("python3")
-        .arg("scripts/raceday-prep.py")
+    // "CUTUCAR" O RENDER NO INÍCIO (WARM-UP) ---
+    // Iniciamos o trigger sem esperar o resultado (em background) para ganhar tempo
+    let _ = tokio::spawn(async {
+        trigger_render_sync().await;
+    });
+
+    // --- 2. DEFINIR EXECUTÁVEL PYTHON POR S.O. ---
+    #[cfg(target_os = "windows")]
+    let python_exe = "bin/raceday-prep.exe";
+    
+    #[cfg(not(target_os = "windows"))]
+    let python_exe = "bin/raceday-prep";
+
+    // Validação de existência do binário
+    if !Path::new(python_exe).exists() {
+        eprintln!("❌ ERRO FATAL: O executável Python não foi encontrado em: {}", python_exe);
+        eprintln!("Certifique-se de que o arquivo existe na pasta 'bin/' antes de continuar.");
+        exit(1);
+    }
+
+    println!("🚀 [1/5] Iniciando processamento Python ({})", python_exe);
+    let output = Command::new(python_exe)
         .arg("--input").arg(ini_path)
         .arg("--club").arg(&club)
         .arg("--track").arg(&track)
