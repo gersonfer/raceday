@@ -1,0 +1,6 @@
+/target
+/temp_out
+/build-json
+.env
+*.json
+!index.json

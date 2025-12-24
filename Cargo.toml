@@ -1,0 +1,18 @@
+[package]
+name = "raceday"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+askama = "0.14.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+unicode-normalization = "0.1"
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+base64 = "0.21"
+tera = "1.19" # Motor de template (muito similar ao Jinja2)
+aws-config = "1.1.7"
+aws-sdk-s3 = "1.17.0"
+aws-smithy-types = "1.1.7"
+tokio = { version = "1.36", features = ["full"] }
+handlebars = "5.0" # Se você ainda usar para partes do template 

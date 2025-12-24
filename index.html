@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RaceDay Dashboard | DG Slot Racing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f1f5f9; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+        .track-badge { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-12">
+            <h1 class="text-4xl font-extrabold tracking-tight mb-3 text-white">RaceDay Reports</h1>
+            <div id="main-counter-container" class="flex items-center space-x-3">
+                <p class="text-slate-400 text-sm">Relatórios de competições processados automaticamente</p>
+                <span id="total-pill" class="bg-blue-500/10 text-blue-400 text-[11px] font-bold px-2 py-0.5 rounded-full border border-blue-500/20 shadow-sm">
+                    Carregando...
+                </span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <select id="filter-club" class="bg-slate-800 p-3 rounded-lg border border-slate-700 text-slate-200 outline-none focus:border-blue-500 transition-colors">
+                <option value="">Todos os Clubes</option>
+            </select>
+            <select id="filter-track" class="bg-slate-800 p-3 rounded-lg border border-slate-700 text-slate-200 outline-none focus:border-blue-500 transition-colors">
+                <option value="">Todas as Pistas</option>
+            </select>
+            <div class="relative">
+                <input type="text" id="search" placeholder="Buscar corrida..." class="w-full bg-slate-800 p-3 rounded-lg border border-slate-700 text-slate-200 outline-none focus:border-blue-500 transition-colors">
+            </div>
+        </div>
+
+        <div id="dashboard" class="space-y-12">
+            <div class="flex justify-center py-20">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allReports = [];
+        const R2_URL = 'https://pub-598608239bfb446e841ac7b4290a0223.r2.dev/index.json';
+
+        async function initDashboard() {
+            try {
+                const resp = await fetch(R2_URL);
+                allReports = await resp.json();
+                
+                // Ordena por ID decrescente (mais recentes primeiro)
+                allReports.sort((a, b) => b.id.localeCompare(a.id));
+
+                populateFilters();
+                renderDashboard(allReports);
+
+                // Event Listeners
+                document.getElementById('search').addEventListener('input', filterData);
+                document.getElementById('filter-club').addEventListener('change', filterData);
+                document.getElementById('filter-track').addEventListener('change', filterData);
+            } catch (err) {
+                console.error("Erro ao carregar dados:", err);
+                document.getElementById('dashboard').innerHTML = `
+                    <p class="text-center text-red-400 py-20 bg-red-400/10 rounded-xl border border-red-400/20">
+                        Erro ao carregar os relatórios. Verifique sua conexão.
+                    </p>`;
+            }
+        }
+
+        function populateFilters() {
+            const clubs = [...new Set(allReports.map(r => r.club))].sort();
+            const tracks = [...new Set(allReports.map(r => r.track))].sort();
+            
+            const clubSelect = document.getElementById('filter-club');
+            const trackSelect = document.getElementById('filter-track');
+            
+            clubs.forEach(c => clubSelect.add(new Option(c, c)));
+            tracks.forEach(t => trackSelect.add(new Option(t, t)));
+        }
+
+        function filterData() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            const selectedClub = document.getElementById('filter-club').value;
+            const selectedTrack = document.getElementById('filter-track').value;
+
+            const filtered = allReports.filter(r => {
+                const matchSearch = r.title.toLowerCase().includes(searchTerm);
+                const matchClub = selectedClub === "" || r.club === selectedClub;
+                const matchTrack = selectedTrack === "" || r.track === selectedTrack;
+                return matchSearch && matchClub && matchTrack;
+            });
+
+            renderDashboard(filtered);
+        }
+
+        function renderDashboard(reports) {
+            const container = document.getElementById('dashboard');
+            const totalPill = document.getElementById('total-pill');
+            
+            totalPill.textContent = `${reports.length} Relatórios`;
+
+            if (reports.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 py-20">Nenhuma corrida encontrada.</p>';
+                return;
+            }
+
+            // Agrupa por pista
+            const grouped = reports.reduce((acc, r) => {
+                if (!acc[r.track]) acc[r.track] = [];
+                acc[r.track].push(r);
+                return acc;
+            }, {});
+
+            container.innerHTML = Object.keys(grouped).sort().map(track => `
+                <section class="mb-12">
+                    <div class="flex flex-col mb-6 border-b border-slate-800 pb-3">
+                        <div class="flex items-center space-x-3">
+                            <h2 class="text-2xl font-bold text-slate-100 tracking-tight uppercase">${track}</h2>
+                            <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-bold">
+                                ${grouped[track].length}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        ${grouped[track].map(r => {
+                            // Formata a data para exibir DD/MM
+                            const dateParts = r.date.split('/');
+                            const dayMonth = dateParts.length >= 2 ? `${dateParts[0]}/${dateParts[1]}` : r.date;
+
+                            return `
+                            <a href="${r.report_link}" target="_blank" class="glass-card p-5 rounded-xl hover:bg-slate-800/80 transition-all duration-300 block border border-white/5 shadow-sm hover:shadow-blue-500/10 group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <span class="text-[10px] font-bold text-blue-400 bg-blue-400/10 px-2 py-1 rounded shadow-inner">${dayMonth}</span>
+                                    <span class="text-[9px] font-mono text-slate-600 group-hover:text-slate-400 transition-colors">${r.id}</span>
+                                </div>
+                                <h3 class="font-bold text-slate-200 mb-4 leading-tight group-hover:text-white transition-colors h-12 overflow-y-hidden line-clamp-2 uppercase text-sm">${r.title}</h3>
+                                <div class="flex items-center text-[10px] text-slate-500 font-semibold tracking-wide uppercase">
+                                    <svg class="w-3.5 h-3.5 mr-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    ${r.club}
+                                </div>
+                            </a>
+                            `;
+                        }).join('')}
+                    </div>
+                </section>
+            `).join('');
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>

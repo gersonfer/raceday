@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>RaceDay Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f1f5f9; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-12">
+            <h1 class="text-4xl font-extrabold tracking-tight mb-3 text-white">RaceDay Reports</h1>
+            <div id="main-counter-container" class="flex items-center space-x-2">
+                <p class="text-slate-400 text-sm">Relatórios de competições processados automaticamente</p>
+                <span id="total-pill" class="bg-blue-500/10 text-blue-400 text-[11px] font-bold px-2 py-0.5 rounded-full border border-blue-500/20 shadow-sm">
+                    0 Relatórios
+                </span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <select id="filter-club" class="bg-slate-800 p-3 rounded-lg border border-slate-700 outline-none focus:border-blue-500">
+                <option value="">Todos os Clubes</option>
+            </select>
+            <select id="filter-track" class="bg-slate-800 p-3 rounded-lg border border-slate-700 outline-none focus:border-blue-500">
+                <option value="">Todas as Pistas</option>
+            </select>
+            <input type="text" id="search" placeholder="Buscar corrida..." class="bg-slate-800 p-3 rounded-lg border border-slate-700 outline-none focus:border-blue-500">
+        </div>
+
+        <div id="reports-container" class="space-y-4">
+            </div>
+    </div>
+
+    <div id="dashboard" class="space-y-12">
+      </div>
+
+    <script>
+        let allReports = [];
+
+        async function initDashboard() {
+            const resp = await fetch('index.json');
+            allReports = await resp.json();
+            
+            populateFilters();
+            renderDashboard(allReports);
+
+            // Listeners para busca e filtros
+            document.getElementById('search').addEventListener('input', filterData);
+            document.getElementById('filter-club').addEventListener('change', filterData);
+            document.getElementById('filter-track').addEventListener('change', filterData);
+        }
+
+        function populateFilters() {
+            const clubs = [...new Set(allReports.map(r => r.club))].sort();
+            const tracks = [...new Set(allReports.map(r => r.track))].sort();
+            
+            const clubSelect = document.getElementById('filter-club');
+            const trackSelect = document.getElementById('filter-track');
+            
+            clubs.forEach(c => clubSelect.add(new Option(c, c)));
+            tracks.forEach(t => trackSelect.add(new Option(t, t)));
+        }
+
+        function filterData() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            const selectedClub = document.getElementById('filter-club').value;
+            const selectedTrack = document.getElementById('filter-track').value;
+
+            const filtered = allReports.filter(r => {
+                const matchSearch = r.title.toLowerCase().includes(searchTerm);
+                const matchClub = selectedClub === "" || r.club === selectedClub;
+                const matchTrack = selectedTrack === "" || r.track === selectedTrack;
+                return matchSearch && matchClub && matchTrack;
+            });
+
+            renderDashboard(filtered);
+        }
+
+        function renderDashboard(reports) {
+            const container = document.getElementById('dashboard');
+            const totalPill = document.getElementById('total-pill');
+            
+            // Atualiza o contador principal discretamente
+            totalPill.textContent = `${reports.length} Relatórios`;
+
+            if (reports.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 py-20">Nenhuma corrida encontrada.</p>';
+                return;
+            }
+
+            const grouped = reports.reduce((acc, r) => {
+                if (!acc[r.track]) acc[r.track] = [];
+                acc[r.track].push(r);
+                return acc;
+            }, {});
+
+            container.innerHTML = Object.keys(grouped).sort().map(track => `
+                <section class="mb-12">
+                    <div class="flex flex-col mb-6 border-b border-slate-800 pb-3">
+                        <h2 class="text-2xl font-bold text-slate-100 tracking-tight uppercase">${track}</h2>
+                        <div class="mt-1">
+                            <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md font-medium uppercase tracking-wider border border-white/5">
+                                ${grouped[track].length} Relatórios nesta pista
+                            </span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        ${grouped[track].map(r => `
+                            <a href="${r.url}" class="glass-card p-5 rounded-xl hover:bg-slate-800/80 transition-all duration-300 block border border-white/5 shadow-sm hover:shadow-blue-500/5 group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <span class="text-[10px] font-bold text-blue-400 bg-blue-400/10 px-2 py-1 rounded shadow-inner">${r.month}/${r.year}</span>
+                                    <span class="text-[9px] font-mono text-slate-600 group-hover:text-slate-500 transition-colors">${r.timestamp}</span>
+                                </div>
+                                <h3 class="font-bold text-slate-200 mb-4 leading-tight group-hover:text-white transition-colors h-12 overflow-hidden text-ellipsis">${r.title}</h3>
+                                <div class="flex items-center text-[10px] text-slate-500 font-semibold tracking-wide uppercase">
+                                    <svg class="w-3 h-3 mr-1.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    ${r.club}
+                                </div>
+                            </a>
+                        `).join('')}
+                    </div>
+                </section>
+            `).join('');
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>

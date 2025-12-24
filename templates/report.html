@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ event.title }} - {{ club }}</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #1a1a1a;
+            --border-color: #eef0f2;
+            --accent-soft: #f8f9fa;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0f172a;
+                --card-bg: #1e293b;
+                --text-main: #f1f5f9;
+                --border-color: #334155;
+                --accent-soft: #1e293b;
+            }
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            margin: 0; padding: 40px 20px; 
+            background-color: var(--bg-color); color: var(--text-main);
+            transition: background-color 0.3s ease;
+        }
+
+        .report-header { text-align: center; margin-bottom: 40px; }
+        .report-header h1 { margin: 5px 0; font-weight: 300; letter-spacing: -1px; font-size: 2.5em; }
+        .club-tag { font-weight: 700; color: #888; text-transform: uppercase; font-size: 0.85em; letter-spacing: 2px; }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            padding: 30px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .section-title {
+            font-size: 1.1em; font-weight: 700; margin-bottom: 25px;
+            color: var(--text-main); text-transform: uppercase; letter-spacing: 1px;
+            display: flex; align-items: center;
+        }
+        .section-title::before {
+            content: ""; display: inline-block; width: 4px; height: 20px;
+            background: #3b82f6; margin-right: 12px; border-radius: 2px;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 12px 8px; font-size: 0.7em; text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid var(--border-color); text-align: center; }
+        td { padding: 14px 8px; border-bottom: 1px solid var(--border-color); font-size: 0.95em; text-align: center; }
+        
+        .col-piloto { text-align: left !important; font-weight: 600; width: 200px; }
+        .total-laps-cell { font-weight: 800; font-size: 1.1em; }
+
+        /* Estilo Zebra por Fenda */
+        .f-Vermelha { background: rgba(255, 82, 82, 0.08); color: #ef4444; font-weight: bold; }
+        .f-Branca { background: rgba(255, 255, 255, 0.05); color: #94a3b8; font-weight: bold; }
+        .f-Verde { background: rgba(76, 175, 80, 0.08); color: #22c55e; font-weight: bold; }
+        .f-Laranja { background: rgba(255, 152, 0, 0.08); color: #f97316; font-weight: bold; }
+        .f-Azul { background: rgba(33, 150, 243, 0.08); color: #3b82f6; font-weight: bold; }
+        .f-Amarela { background: rgba(251, 192, 45, 0.08); color: #eab308; font-weight: bold; }
+        .f-Roxa { background: rgba(156, 39, 176, 0.08); color: #a855f7; font-weight: bold; }
+        .f-Preta { background: rgba(0, 0, 0, 0.15); color: #64748b; font-weight: bold; }
+
+        .pill-fenda { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 800; text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .bg-Vermelha { background: #fee2e2; color: #ef4444; }
+        .bg-Branca { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+        .bg-Verde { background: #dcfce7; color: #22c55e; }
+        .bg-Laranja { background: #ffedd5; color: #f97316; }
+        .bg-Azul { background: #dbeafe; color: #3b82f6; }
+        .bg-Amarela { background: #fef9c3; color: #ca8a04; }
+        .bg-Roxa { background: #f3e8ff; color: #a855f7; }
+        .bg-Preta { background: #334155; color: #f8f9fa; }
+
+        .overall-best-lap-highlight { background: #fef9c3; color: #854d0e; font-weight: 800; padding: 4px 10px; border-radius: 6px; border: 1px solid #fde047; }
+        .chart-container { height: 450px; }
+
+        .best-in-slot {
+            font-weight: 800 !important;
+            color: var(--text-main) !important;
+            background: rgba(255, 255, 255, 0.5); /* Brilho leve */
+            text-decoration: underline; /* Ou um background mais forte se preferir */
+        }
+
+        /* Destaque para a coluna Total */
+        .total-best-highlight {
+            color: #2e7d32 !important; /* Verde escuro */
+            background-color: #e8f5e9 !important;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="report-header">
+        <div class="club-tag">{{ club }} • {{ track }}</div>
+        <h1>{{ event.title }}</h1>
+        <p style="color: #64748b; font-weight: 500;">{{ event.date_ini }}</p>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Mapa de Corrida</div>
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2" style="text-align: left;">Piloto</th>
+                    {% set cores_nomes = ["Vermelha", "Branca", "Verde", "Laranja", "Azul", "Amarela", "Roxa", "Preta"] %}
+                    {% for i in range(start=1, end=metadata.slots + 1) %}
+                        {% set idx = i - 1 %}{% set nome_fenda = cores_nomes[idx] %}
+                        <th colspan="2" class="f-{{ nome_fenda }}">{{ nome_fenda }}</th>
+                    {% endfor %}
+                    <th colspan="2" style="background: var(--accent-soft);">Resultado</th>
+                </tr>
+                <tr>
+                    {% for i in range(start=1, end=metadata.slots + 1) %}
+                    <th>V</th><th>T</th>
+                    {% endfor %}
+                    <th style="background: var(--accent-soft);">Voltas</th>
+                    <th style="background: var(--accent-soft);">Best</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in ranking_display %}
+                <tr>
+                    <td class="col-piloto">{{ p.nome }}</td>
+                    {% for i in range(start=1, end=metadata.slots + 1) %}
+                        {% set idx = i - 1 %}
+                        {% set nome_fenda = cores_nomes[idx] %}
+                        {% set tempo_atual = p.times_per_slot[i] | default(value="---") %}
+                        
+                        <td class="f-{{ nome_fenda }}">{{ p.laps_per_slot[i] | default(value="0") }}</td>
+                        <td class="f-{{ nome_fenda }} {% if tempo_atual == best_times_per_slot[i] %}best-in-slot{% endif %}" style="opacity: 0.9; font-size: 0.85em;">
+                            {{ tempo_atual }}
+                        </td>
+                    {% endfor %}
+                    
+                    <td class="total-laps-cell">
+                        {{ p.total_laps }}
+                    </td>
+
+                    <td style="font-weight: 600;" class="{% if p.best_time == overall_best_time_formatted %}total-best-highlight{% endif %}">
+                        {{ p.best_time }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Classificação Geral</div>
+        <table>
+            <thead>
+                <tr><th>Pos</th><th style="text-align: left;">Piloto</th><th>Voltas</th><th>Zona / Gap</th><th>Média</th><th>Melhor Volta</th><th>Melhor Fenda</th></tr>
+            </thead>
+            <tbody>
+                {% for p in ranking_display %}
+                <tr>
+                    <td style="color: #94a3b8; font-weight: bold;">{{ loop.index }}</td>
+                    <td class="col-piloto">{{ p.nome }}</td>
+                    <td class="total-laps-cell">{{ p.total_laps }}</td>
+                    <td style="color: #64748b; font-size: 0.85em;">{{ p.zona }} / {{ p.gap }}</td>
+                    <td>{{ p.average_time }}</td>
+                    <td><span class="{% if p.is_overall_best %}overall-best-lap-highlight{% endif %}">{{ p.best_time }}</span></td>
+                    <td><span class="pill-fenda bg-{{ p.best_slot_name }}">{{ p.best_slot_name }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="section-title">Progressão de Performance</div>
+        <div class="chart-container"><canvas id="progressionChart"></canvas></div>
+    </div>
+
+    {% if insights %}
+    <div class="card" style="border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.05);">
+        <div class="section-title">Análise de Prova & Destaques</div>
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            {% for insight in insights %}
+            <div style="font-size: 1.05em; color: var(--text-main); line-height: 1.4;">
+                {{ insight }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        const chartData = JSON.parse('{{ dados_grafico | safe }}');
+        new Chart(document.getElementById('progressionChart'), {
+            type: 'line', data: chartData,
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: false, grace: '5%', grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                    x: { grid: { display: false } }
+                },
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 20 } } }
+            }
+        });
+    </script>
+</body>
+</html>
