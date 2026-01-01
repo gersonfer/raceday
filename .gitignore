@@ -8,6 +8,8 @@
 .env
 *.json
 !index.json
+scripts/processador_races.py
+scripts/r2-triggers.py
 
 # Lixo de Sistema e Python (Ignorar em qualquer subpasta)
 **/.DS_Store

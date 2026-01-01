@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=1200">
     <title>{{ event.title }} - {{ club }}</title>
     <style>
         :root {
@@ -28,6 +30,8 @@
             margin: 0; padding: 40px 20px; 
             background-color: var(--bg-color); color: var(--text-main);
             transition: background-color 0.3s ease;
+            /* Garante que o corpo não fique menor que o planejado */
+            min-width: 1240px; 
         }
 
         .report-header { text-align: center; margin-bottom: 40px; }
@@ -53,7 +57,7 @@
             background: #3b82f6; margin-right: 12px; border-radius: 2px;
         }
 
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 1200px; border-collapse: collapse; }
         th { padding: 12px 8px; font-size: 0.7em; text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid var(--border-color); text-align: center; }
         td { padding: 14px 8px; border-bottom: 1px solid var(--border-color); font-size: 0.95em; text-align: center; }
         
@@ -86,56 +90,27 @@
         .best-in-slot {
             font-weight: 800 !important;
             color: var(--text-main) !important;
-            background: rgba(255, 255, 255, 0.5); /* Brilho leve */
-            text-decoration: underline; /* Ou um background mais forte se preferir */
+            background: rgba(255, 255, 255, 0.5);
+            text-decoration: underline;
         }
 
-        /* Destaque para a coluna Total */
         .total-best-highlight {
-            color: #2e7d32 !important; /* Verde escuro */
+            color: #2e7d32 !important;
             background-color: #e8f5e9 !important;
         }
 
-        /* Container para permitir scroll lateral */
+        /* Container de tabela simples para Desktop */
         .table-wrapper {
-            overflow-x: auto;
+            overflow-x: visible;
             width: 100%;
-            -webkit-overflow-scrolling: touch;
         }
 
-        @media (max-width: 768px) {
-            /* Fixa a primeira coluna (Nomes) */
-            .col-piloto, 
-            thead tr:first-child th:first-child,
-            thead tr:nth-child(2) th:first-child {
-                position: sticky;
-                left: 0;
-                z-index: 20;
-                background-color: var(--card-bg) !important;
-                min-width: 140px; /* Largura mínima no mobile */
-                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-            }
-
-            /* Ajuste de profundidade para o cabeçalho fixo */
-            thead th {
-                position: sticky;
-                top: 0;
-                z-index: 10;
-            }
-
-            /* Diminuir levemente o padding para ganhar espaço */
-            td, th {
-                padding: 10px 5px !important;
-                font-size: 0.85em !important;
-            }
-
-            .chart-container {
-                height: 300px; /* Gráfico menor no mobile */
-            }
-        }
+        /* REMOVIDO: Bloco @media (max-width: 768px) que continha os sticky headers mobile */
+        
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+...
 <body>
     <div class="report-header">
         <div class="club-tag">{{ club }} • {{ track }}</div>
